@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var registerButton: Button
     private lateinit var loginButton: Button
 
-    private lateinit var nameInputLayout: View // Add this for the layout container
+    private lateinit var nameInputLayout: View 
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,18 +109,15 @@ class MainActivity : AppCompatActivity() {
         isLoginMode = (mode == "LOGIN")
         captureNextFrame = true // Get ready to grab a face
 
-        // Show the camera UI
         viewFinder.visibility = View.VISIBLE
         faceOverlay.visibility = View.VISIBLE
 
-        // Hide the buttons so they don't get clicked twice
         registerButton.visibility = View.GONE
         loginButton.visibility = View.GONE
         etName.visibility = View.GONE
 
         isProcessing=false
 
-        // 3. FORCE RESTART CAMERA
 //        if (isCameraStarted) return
 //        isCameraStarted = true // Reset the flag so startCamera actually runs
         viewFinder.post {
@@ -132,17 +129,14 @@ class MainActivity : AppCompatActivity() {
         // 1. Get the name from your EditText FIRST
         val userId = etName.text.toString().trim()
 
-        // 2. Validate the name before even starting the network request
         if (userId.isEmpty()) {
             etName.error = "Name is required"
             isProcessing = false // Reset this so the user can try again
             return
         }
 
-        // 3. UI Feedback
         Toast.makeText(this, "Registering $userId...", Toast.LENGTH_SHORT).show()
 
-        // 4. Create the request with the actual name
         val request = FaceRequest(user_id = userId, embedding = embedding.toList())
 
         RetrofitClient.api.register(request)
@@ -152,19 +146,16 @@ class MainActivity : AppCompatActivity() {
 
                     if (response.isSuccessful) {
                         runOnUiThread {
-                            // Stop Camera
                             if (::cameraProvider.isInitialized) {
                                 cameraProvider.unbindAll()
                             }
 
-                            // Hide UI
                             viewFinder.visibility = View.GONE
                             faceOverlay.visibility = View.GONE
                             registerButton.visibility = View.VISIBLE
                             loginButton.visibility = View.VISIBLE
                             etName.visibility = View.VISIBLE
 
-                            // Move to Home
                             val intent = Intent(this@MainActivity, HomeActivity::class.java)
                             intent.putExtra("USER_NAME", userId) // Optional: Pass name to Home
                             startActivity(intent)
@@ -193,15 +184,12 @@ class MainActivity : AppCompatActivity() {
 //                    isProcessing = false
                     if (response.isSuccessful) {
                         runOnUiThread {
-                            // 1. Stop the CameraX provider
                             if (::cameraProvider.isInitialized) {
                                 cameraProvider.unbindAll() // This physically turns the camera off
                             }
-//                            // 2. Hide the camera UI
 //                            viewFinder.visibility = View.GONE
 //                            faceOverlay.visibility = View.GONE
 
-                            // 3. Move to Home
                             val intent = Intent(this@MainActivity, HomeActivity::class.java)
                             intent.putExtra("USER_NAME", userId)
                             startActivity(intent)
@@ -228,7 +216,6 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    // ✅ Permission Handling
     private fun checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -274,7 +261,7 @@ class MainActivity : AppCompatActivity() {
 
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-//                .setTargetRotation(viewFinder.display.rotation) // Add this for better rotation handling
+//                .setTargetRotation(viewFinder.display.rotation)
                 .also {builder->
                     viewFinder.display?.rotation?.let { rotation ->
                         builder.setTargetRotation(rotation)
@@ -327,80 +314,6 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         checkCameraPermission()
     }
-    // ✅ Process Frames
-//    @OptIn(ExperimentalGetImage::class)
-//    private fun processImageProxy(imageProxy: ImageProxy) {
-//        Log.d("CAMERA_FLOW", "Received frame at ${System.currentTimeMillis()}")
-//        val mediaImage = imageProxy.image
-//        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-//        if (mediaImage != null) {
-//            val inputImage = InputImage.fromMediaImage(
-//                mediaImage,
-//                imageProxy.imageInfo.rotationDegrees
-//            )
-//
-//            val rawBitmap = toBitmap(imageProxy)
-//
-//            val rotatedBitmap = if (rawBitmap != null) {
-//                rotateBitmap(rawBitmap, imageProxy.imageInfo.rotationDegrees)
-//            } else null
-//
-//            detectFaceLive(inputImage, rotatedBitmap)
-//        }
-//
-//        imageProxy.close()
-//    }
-
-//    @OptIn(ExperimentalGetImage::class)
-//    private fun processImageProxy(imageProxy: ImageProxy) {
-//        val mediaImage = imageProxy.image ?: return
-//
-//        // Create InputImage directly from mediaImage (Efficient)
-//        val inputImage = InputImage.fromMediaImage(
-//            mediaImage,
-//            imageProxy.imageInfo.rotationDegrees
-//        )
-//
-//        detector.process(inputImage)
-//            .addOnSuccessListener { faces ->
-//                faceOverlay.setFaces(faces)
-//
-//                if (faces.isNotEmpty() && !isProcessing && captureNextFrame) {
-//                    Log.d("DEBUG", "Face Found! Starting extraction...count = \${faces.size}")
-//
-//                    // ONLY NOW do we do the heavy lifting
-//                    val rawBitmap = toBitmap(imageProxy)
-//                    if (rawBitmap != null) {
-//                        val rotatedBitmap = rotateBitmap(rawBitmap, imageProxy.imageInfo.rotationDegrees)
-//
-//                        val face = faces[0]
-//                        val bounds = face.boundingBox
-//
-//                        try {
-//                            val croppedFace = cropFace(rotatedBitmap, bounds)
-//                            val resizedFace = resizeFace(croppedFace)
-//                            val inputArray = convertBitmapToFloatArray(resizedFace)
-//                            val embedding = faceNetModel.getEmbedding(inputArray)
-//
-//                            isProcessing = true
-//                            captureNextFrame = false
-//
-//                            if (isLoginMode) loginUser(embedding) else registerUser(embedding)
-//
-//                        } catch (e: Exception) {
-//                            Log.e("FACE_ERR", "Processing error: ${e.message}")
-//                        }
-//                    }
-//                }
-//                // CRITICAL: Close inside the listener or use a finally block
-//                imageProxy.close()
-//            }
-//            .addOnFailureListener {
-//                imageProxy.close()
-//                Log.e("FACE", "Detection Failed")
-//
-//            }
-//    }
 
     @OptIn(ExperimentalGetImage::class)
     private fun processImageProxy(imageProxy: ImageProxy) {
@@ -425,7 +338,6 @@ class MainActivity : AppCompatActivity() {
 
                 faceOverlay.setFaces(faces)
 
-                // 2. Only do heavy Bitmap work if we have a face AND the button was clicked
                 if (faces.isNotEmpty() && captureNextFrame) {
                     // LOCK immediately to prevent multiple triggers
                     captureNextFrame = false
@@ -434,7 +346,6 @@ class MainActivity : AppCompatActivity() {
                     val face = faces[0]
                     val bounds = face.boundingBox
 
-                    // Move heavy bitmap work to a background thread to prevent UI freeze
                     cameraExecutor.execute {
                         try {
                             val bitmap = toBitmap(imageProxy)
@@ -445,7 +356,6 @@ class MainActivity : AppCompatActivity() {
                                 val inputBuffer = convertBitmapToByteBuffer(resized)
                                 val embedding = faceNetModel.getEmbedding(inputBuffer)
 
-                                // Jump back to UI thread for the Network Call/Toasts
                                 runOnUiThread {
                                     if (isLoginMode) loginUser(embedding)
                                     else registerUser(embedding)
@@ -468,46 +378,6 @@ class MainActivity : AppCompatActivity() {
                 imageProxy.close()
             }
     }
-
-    // ✅ Live Face Detection
-//    private fun detectFaceLive(image: InputImage, bitmap: Bitmap?) {
-//
-//        detector.process(image)
-//            .addOnSuccessListener { faces ->
-//                faceOverlay.setFaces(faces)
-//
-//                if (faces.isNotEmpty() && bitmap != null && !isProcessing && captureNextFrame) {
-//                    isProcessing = false
-//                    val face = faces[0]
-//                    val bounds = face.boundingBox
-//
-//                    val croppedFace = cropFace(bitmap, bounds)
-//                    // Step 1: Resize
-//                    val resizedFace = resizeFace(croppedFace)
-//                    // Step 2: Convert to input tensor
-//                    val inputArray = convertBitmapToFloatArray(resizedFace)
-//
-//                    // 🔥 NEW STEP
-//                    val embedding = faceNetModel.getEmbedding(inputArray)
-//                    Log.d("FACE", "Face Detected: ${faces.size}")
-//                    Log.d("EMBEDDING", embedding.joinToString())
-//
-//                    // 🔥 CALL BACKEND
-//                    sendToBackend(embedding, isLogin = isLoginMode) // register
-//                    captureNextFrame = false
-//                    //reset after delay
-//                    viewFinder.postDelayed({ isProcessing = false}, 2000)
-//                    Toast.makeText(this, "Login Success", Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//            .addOnFailureListener {
-//                Log.e("FACE", "Detection Failed")
-//            }
-//    }
-//    private fun embeddingToList(embedding: FloatArray): List<Float> {
-//        return embedding.toList()0707
-
-//    }
 
     private fun detectFaceLive(image: InputImage, bitmap: Bitmap?) {
         detector.process(image)
@@ -584,70 +454,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
     }
-//private fun detectFaceLive(image: InputImage, bitmap: Bitmap?) {
-//    detector.process(image)
-//        .addOnSuccessListener { faces ->
-//            faceOverlay.setFaces(faces)
-//
-//            // DEBUG LOG: See if it's even finding a face
-//            if (faces.isEmpty()) {
-//                // Log.d("DEBUG", "No face detected in this frame")
-//            } else {
-//                Log.d("DEBUG", "FACE FOUND! Size: ${faces.size}")
-//            }
-//
-//            if (faces.isNotEmpty() && !isProcessing && captureNextFrame) {
-//                // Now, only if a face is found and we need to capture, we handle the bitmap
-//                val rawBitmap = bitmap ?: return@addOnSuccessListener
-//
-//                val face = faces[0]
-//                // ... rest of your embedding logic
-//            }
-//        }
-//}
-//
-
-
-
-//    private fun sendToBackend(embedding: FloatArray, isLogin: Boolean) {
-//
-//        val request = FaceRequest(
-//            user_id = "Samadnya",   // later make dynamic
-//            embedding = embeddingToList(embedding)
-//        )
-//
-//        val call: Call<ApiResponse> = if (isLogin) {
-//            RetrofitClient.api.login(request)
-//        } else {
-//            RetrofitClient.api.register(request)
-//        }
-//
-//        call.enqueue(object : retrofit2.Callback<ApiResponse> {
-//
-//            override fun onResponse(
-//                call: retrofit2.Call<ApiResponse>,
-//                response: retrofit2.Response<ApiResponse>
-//            ) {
-//                isProcessing = false
-//                if (response.isSuccessful) {
-//                    Toast.makeText(
-//                        this@MainActivity,
-//                        response.body()?.message,
-//                        Toast.LENGTH_LONG
-//                    ).show()
-//                }
-//            }
-//
-//            override fun onFailure(call: retrofit2.Call<ApiResponse>, t: Throwable) {
-//                isProcessing = false
-//                Toast.makeText(
-//                    this@MainActivity,
-//                    "Error: ${t.message}",
-//                    Toast.LENGTH_SHORT
-//                ).show()
-//            }
-//        })
-//    }
 private fun sendToBackend(embedding: FloatArray, isLogin: Boolean) {
     val request = FaceRequest("Samadnya", embedding.toList())
     val call = if (isLogin) RetrofitClient.api.login(request) else RetrofitClient.api.register(request)
@@ -746,27 +552,7 @@ private fun sendToBackend(embedding: FloatArray, isLogin: Boolean) {
     private fun resizeFace(bitmap: Bitmap): Bitmap {
         return Bitmap.createScaledBitmap(bitmap, 112, 112, true)
     }
-//
-//    private fun convertBitmapToFloatArray(bitmap: Bitmap): Array<Array<Array<FloatArray>>> {
-//
-//        val input = Array(1) { Array(160) { Array(160) { FloatArray(3) } } }
-//
-//        for (y in 0 until 160) {
-//            for (x in 0 until 160) {
-//                val pixel = bitmap.getPixel(x, y)
-//
-//                val r = ((pixel shr 16) and 0xFF) / 255.0f
-//                val g = ((pixel shr 8) and 0xFF) / 255.0f
-//                val b = (pixel and 0xFF) / 255.0f
-//
-//                input[0][y][x][0] = r
-//                input[0][y][x][1] = g
-//                input[0][y][x][2] = b
-//            }
-//        }
-//
-//        return input
-//    }
+
 private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
     // 1. Change size to match your model's requirement (112)
     val size = 112
