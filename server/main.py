@@ -14,6 +14,7 @@ MONGO_URL = os.getenv("MONGO_URL")
 DB_NAME = os.getenv("DB_NAME")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
+
 # MongoDB connection
 client = MongoClient(MONGO_URL)
 db = client[DB_NAME]
